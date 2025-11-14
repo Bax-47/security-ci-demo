@@ -1,8 +1,6 @@
 name: CI with Security Checks
 
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   test-and-scan:
@@ -21,21 +19,17 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install safety bandit
 
       - name: Run Tests
         env:
-          PYTHONPATH: ${{ github.workspace }}   # <-- let Python find src/
-        run: |
-          python -m pytest -q
+          PYTHONPATH: ${{ github.workspace }}   # <--- fixes ModuleNotFoundError
+        run: pytest tests/ -v
 
-      - name: Security Check 1 - Dependency Scan (safety)
+      - name: Security Check 1 - Dependency Scan
+        run: safety check --full-report
         continue-on-error: true
-        run: |
-          pip install safety
-          safety check --full-report
 
-      - name: Security Check 2 - Code Security Scan (bandit)
+      - name: Security Check 2 - Code Security Scan
+        run: bandit -r src -ll
         continue-on-error: true
-        run: |
-          pip install bandit
-          bandit -r src -q
